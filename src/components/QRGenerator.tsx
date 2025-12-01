@@ -27,7 +27,7 @@ export const QRGenerator = () => {
   const [logo, setLogo] = useState<string | null>(null);
   const [dotsStyle, setDotsStyle] = useState<"rounded" | "dots" | "classy" | "square">("rounded");
   const [cornerSquareStyle, setCornerSquareStyle] = useState<"dot" | "square" | "extra-rounded">("extra-rounded");
-  const [cornerDotStyle, setCornerDotStyle] = useState<"dot" | "square">("dot");
+  const [cornerDotStyle] = useState<"dot" | "square">("dot");
   
   const [backgroundType, setBackgroundType] = useState<"solid" | "gradient" | "pattern">("solid");
   const [gradient, setGradient] = useState<GradientConfig>({

@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { Link, Wifi, Calendar, User, FileText } from "lucide-react";
 import { toast } from "sonner";
 
