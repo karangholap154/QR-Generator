@@ -74,7 +74,7 @@ export const QRScanner = ({ onClose }: QRScannerProps) => {
             return decodedText;
           });
         },
-        (errorMessage) => {
+        (_errorMessage) => {
           // Ignore scanning errors, they happen constantly while searching
         }
       );

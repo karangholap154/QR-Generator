@@ -337,6 +337,19 @@ export const QRGenerator = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Corner Dot Style</Label>
+                    <Select value={cornerDotStyle} onValueChange={(value: any) => setCornerDotStyle(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dot">Dot</SelectItem>
+                        <SelectItem value="square">Square</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </TabsContent>
 
                 {/* Background Tab */}
