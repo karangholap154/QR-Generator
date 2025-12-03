@@ -8,16 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Copy, Check, Sparkles } from "lucide-react";
+import { Download, Copy, Check, Sparkles, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { ColorPicker } from "./ColorPicker";
 import { PresetSelector } from "./PresetSelector";
 import { GradientPatternSelector } from "./GradientPatternSelector";
 import type { GradientConfig, PatternConfig } from "./GradientPatternSelector";
 import { generatePatternDataURL, generateGradientDataURL } from "@/utils/patternGenerator";
+import { QRScanner } from "./QRScanner";
 
 export const QRGenerator = () => {
-  const [text, setText] = useState("https://karangholap.vercel.app/");
+  const [text, setText] = useState("https://lovable.dev");
   const [size, setSize] = useState(300);
   const [margin, setMargin] = useState(10);
   const [errorCorrection, setErrorCorrection] = useState<"L" | "M" | "Q" | "H">("M");
@@ -27,7 +28,7 @@ export const QRGenerator = () => {
   const [logo, setLogo] = useState<string | null>(null);
   const [dotsStyle, setDotsStyle] = useState<"rounded" | "dots" | "classy" | "square">("rounded");
   const [cornerSquareStyle, setCornerSquareStyle] = useState<"dot" | "square" | "extra-rounded">("extra-rounded");
-  const [cornerDotStyle] = useState<"dot" | "square">("dot");
+  const [cornerDotStyle, setCornerDotStyle] = useState<"dot" | "square">("dot");
   
   const [backgroundType, setBackgroundType] = useState<"solid" | "gradient" | "pattern">("solid");
   const [gradient, setGradient] = useState<GradientConfig>({
@@ -45,6 +46,7 @@ export const QRGenerator = () => {
     backgroundColor: "#ffffff",
     size: 8,
   });
+  const [showScanner, setShowScanner] = useState(false);
   
   const qrCodeRef = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
@@ -83,7 +85,7 @@ export const QRGenerator = () => {
   }, []);
 
   useEffect(() => {
-    if (qrCode.current) {
+    if (qrCode.current && qrCodeRef.current) {
       let backgroundImage: string | undefined;
 
       if (backgroundType === "gradient") {
@@ -135,36 +137,42 @@ export const QRGenerator = () => {
         },
       });
 
+      // Re-append to DOM to ensure proper rendering
+      qrCodeRef.current.innerHTML = "";
+      qrCode.current.append(qrCodeRef.current);
+
       // If we have a background image, we need to composite it
-      if (backgroundImage && qrCodeRef.current) {
-        const canvas = qrCodeRef.current.querySelector("canvas");
-        if (canvas) {
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            const img = new Image();
-            img.onload = () => {
-              // Save the QR code
-              const qrImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              
-              // Draw background
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              
-              // Restore QR code on top
-              const tempCanvas = document.createElement("canvas");
-              tempCanvas.width = canvas.width;
-              tempCanvas.height = canvas.height;
-              const tempCtx = tempCanvas.getContext("2d");
-              if (tempCtx) {
-                tempCtx.putImageData(qrImageData, 0, 0);
+      if (backgroundImage) {
+        setTimeout(() => {
+          const canvas = qrCodeRef.current?.querySelector("canvas");
+          if (canvas) {
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              const img = new Image();
+              img.onload = () => {
+                // Save the QR code
+                const qrImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Draw QR code with transparency
-                ctx.globalCompositeOperation = "source-over";
-                ctx.drawImage(tempCanvas, 0, 0);
-              }
-            };
-            img.src = backgroundImage;
+                // Draw background
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Restore QR code on top
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext("2d");
+                if (tempCtx) {
+                  tempCtx.putImageData(qrImageData, 0, 0);
+                  
+                  // Draw QR code with transparency
+                  ctx.globalCompositeOperation = "source-over";
+                  ctx.drawImage(tempCanvas, 0, 0);
+                }
+              };
+              img.src = backgroundImage;
+            }
           }
-        }
+        }, 0);
       }
     }
   }, [
@@ -182,13 +190,6 @@ export const QRGenerator = () => {
     gradient,
     pattern,
   ]);
-
-  useEffect(() => {
-    if (qrCode.current && qrCodeRef.current) {
-      qrCodeRef.current.innerHTML = "";
-      qrCode.current.append(qrCodeRef.current);
-    }
-  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -217,52 +218,72 @@ export const QRGenerator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center gap-2 gradient-primary px-4 py-2 rounded-full mb-4 text-primary-foreground shadow-glow">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-medium">100% Free • No Limits • Privacy-First</span>
+        <div className="text-center mb-6 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-sky-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-4 text-white shadow-glow">
+            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-xs sm:text-sm font-medium">100% Free • No Limits • Privacy-First</span>
           </div>
-          <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 text-foreground">
+          <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4 text-black dark:text-foreground">
             QR Code Generator
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
             Create stunning, professional QR codes in seconds. Fully customizable, completely free, and works entirely offline.
           </p>
         </div>
 
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-2 gap-8">
+        {/* Main Content - Reorder on mobile: Preview first */}
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-8">
+          {/* Preview Panel - Shows first on mobile */}
+          <Card className="shadow-card transition-smooth hover:shadow-glow animate-in fade-in slide-in-from-right-8 duration-700 lg:order-2 order-1">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="font-heading text-lg sm:text-2xl">Live Preview</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Your QR code updates in real-time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="flex items-center justify-center p-4 sm:p-8 bg-muted/50 rounded-lg backdrop-blur-sm">
+                <div ref={qrCodeRef} className="transition-smooth hover:scale-105 max-w-full [&>canvas]:max-w-full [&>canvas]:h-auto" />
+              </div>
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-xs sm:text-sm text-muted-foreground text-center">
+                  <span className="font-semibold text-primary">🔒 Privacy-First:</span> All processing happens in your browser.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Controls Panel */}
-          <Card className="shadow-card transition-smooth hover:shadow-glow animate-in fade-in slide-in-from-left-8 duration-700">
-            <CardHeader>
-              <CardTitle className="font-heading">Customize Your QR Code</CardTitle>
-              <CardDescription>
+          <Card className="shadow-card transition-smooth hover:shadow-glow animate-in fade-in slide-in-from-left-8 duration-700 lg:order-1 order-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="font-heading text-lg sm:text-2xl">Customize Your QR Code</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Adjust settings to create the perfect QR code for your needs
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
               {/* Preset Selector */}
               <PresetSelector onPresetSelect={setText} />
 
               {/* Text Input */}
               <div className="space-y-2">
-                <Label htmlFor="text">Content</Label>
+                <Label htmlFor="text" className="text-sm">Content</Label>
                 <div className="relative">
                   <Textarea
                     id="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Enter URL, text, or data..."
-                    className="min-h-[100px] pr-12"
+                    className="min-h-[80px] sm:min-h-[100px] pr-12 text-sm"
                   />
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={handleCopy}
-                    className="absolute top-2 right-2"
+                    className="absolute top-2 right-2 h-8 w-8"
                   >
                     {copied ? (
                       <Check className="h-4 w-4 text-primary" />
@@ -274,11 +295,11 @@ export const QRGenerator = () => {
               </div>
 
               <Tabs defaultValue="style" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="style">Style</TabsTrigger>
-                  <TabsTrigger value="background">Background</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                  <TabsTrigger value="logo">Logo</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 h-auto">
+                  <TabsTrigger value="style" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Style</TabsTrigger>
+                  <TabsTrigger value="background" className="text-xs sm:text-sm py-2 px-1 sm:px-3">BG</TabsTrigger>
+                  <TabsTrigger value="advanced" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Advanced</TabsTrigger>
+                  <TabsTrigger value="logo" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Logo</TabsTrigger>
                 </TabsList>
 
                 {/* Style Tab */}
@@ -409,42 +430,37 @@ export const QRGenerator = () => {
 
               {/* Download Buttons */}
               <div className="space-y-2">
-              <Label>Download</Label>
-              <div className="flex gap-2">
-              <Button onClick={() => handleDownload("png")} className="flex-1">
-                    <Download className="mr-2 h-4 w-4" />
+                <Label className="text-sm">Download</Label>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleDownload("png")} variant="gradient" className="flex-1 text-sm h-9 sm:h-10">
+                    <Download className="mr-1.5 sm:mr-2 h-4 w-4" />
                     PNG
                   </Button>
-                  <Button onClick={() => handleDownload("svg")} variant="outline" className="flex-1">
-                    <Download className="mr-2 h-4 w-4" />
+                  <Button onClick={() => handleDownload("svg")} variant="outline" className="flex-1 text-sm h-9 sm:h-10">
+                    <Download className="mr-1.5 sm:mr-2 h-4 w-4" />
                     SVG
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Preview Panel */}
-          <Card className="shadow-card transition-smooth hover:shadow-glow animate-in fade-in slide-in-from-right-8 duration-700 sticky top-8">
-            <CardHeader>
-              <CardTitle className="font-heading">Live Preview</CardTitle>
-              <CardDescription>
-                Your QR code updates in real-time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center p-8 bg-muted/50 rounded-lg backdrop-blur-sm">
-                <div ref={qrCodeRef} className="transition-smooth hover:scale-105" />
-              </div>
-              <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                <p className="text-sm text-muted-foreground text-center">
-                  <span className="font-semibold text-primary">🔒 Privacy-First:</span> All processing happens in your browser. No data is sent to any server.
-                </p>
+              {/* Scanner Button */}
+              <div className="pt-3 sm:pt-4 border-t">
+                <Button 
+                  onClick={() => setShowScanner(true)} 
+                  variant="outline" 
+                  className="w-full text-sm h-9 sm:h-10"
+                >
+                  <Camera className="mr-1.5 sm:mr-2 h-4 w-4" />
+                  Scan QR Code
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {showScanner && <QRScanner onClose={() => setShowScanner(false)} />}
     </div>
   );
 };
